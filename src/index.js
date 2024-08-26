@@ -272,7 +272,7 @@ const createWindow = () => {
   Menu.setApplicationMenu(menu);
 
   // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+  // mainWindow.webContents.openDevTools();
 
 };
 
