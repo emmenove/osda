@@ -1,15 +1,24 @@
 let data = [];
-let config = [];
+let config = {};
+  
 let progress = {
-    percent:0,
-    batch:0,
-    total:0
+    percent: 0,
+    batch: 0,
+    total: 0
 }
 
 
 const renderTable = function () {
-
+    let _html = [];
     console.log(data);
+
+    if (!data || data.length <= 0) {
+        _html.push('<div class="h-100 w-100 align-items-center justify-content-center text-center p-5">');
+        _html.push('<p>no data - Importare un file</p>');
+        _html.push('</div>');
+        $('#content').html(_html.join('\n'));
+        return;
+    }
 
     let cols = [];
 
@@ -18,7 +27,7 @@ const renderTable = function () {
     }
 
     //generate new table...
-    let _html = [];
+
     _html.push('<table id="table" class="table table-hover table-striped">');
     // head...
     _html.push('<thead class="table-light sticky-top"><tr>');
@@ -147,13 +156,13 @@ const renderConfig = function () {
 }
 
 
-const renderProgress = function(){
+const renderProgress = function () {
     let _html = [];
     _html.push('<div class="h-100 w-100 align-items-center justify-content-center text-center p-5">');
     _html.push('<div class="progress center-block m-auto w-75">');
-    _html.push('<div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="'+progress.percent+'" aria-valuemin="0" aria-valuemax="100" style="width: '+progress.percent+'%"></div>');
+    _html.push('<div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="' + progress.percent + '" aria-valuemin="0" aria-valuemax="100" style="width: ' + progress.percent + '%"></div>');
     _html.push('</div>');
-    _html.push('<p>Process batch '+progress.batch+' / '+progress.total+'</p>')
+    _html.push('<p>Process batch ' + progress.batch + ' / ' + progress.total + '</p>')
     _html.push('</div>');
     $('#content').html(_html.join('\n'));
 }
@@ -191,10 +200,10 @@ const updateConfig = function () {
     console.log('update config', config);
 
     $('#iApiKey').val(config.apiKey);
-    switch(config.collezione){
-        case 'sanctions' : $('#iCollezione2').prop('checked', true);break;
-        case 'pep' : $('#iCollezione3').prop('checked', true);break;
-        default : $('#iCollezione1').prop('checked', true);break;
+    switch (config.collezione) {
+        case 'sanctions': $('#iCollezione2').prop('checked', true); break;
+        case 'pep': $('#iCollezione3').prop('checked', true); break;
+        default: $('#iCollezione1').prop('checked', true); break;
     }
     $('#iNominativo').val(config.nominativo);
     $('#iGiurisdizione').val(config.giurisdizione);
@@ -219,15 +228,15 @@ window.api.onCheckProcess((value) => {
     console.log(value);
     if (value.event === 'start') {
         progress = {
-            percent:0,
-            batch:0,
-            total:value.total
+            percent: 0,
+            batch: 0,
+            total: value.total
         }
         displayPage('progress');
     }
     if (value.event === 'progress') {
-        progress.percent=value.percent;
-        progress.batch=value.batch;
+        progress.percent = value.percent;
+        progress.batch = value.batch;
         displayPage('progress');
     }
     if (value.event === 'end') {

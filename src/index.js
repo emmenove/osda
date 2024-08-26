@@ -12,7 +12,18 @@ const internal = require('node:stream');
 // variabile principale!
 let data = [];
 let sanctions = {};
-let config = {};
+
+// default config
+let config = {
+  apiKey: "",
+  collezione: "default",
+  nominativo: "",
+  giurisdizione: "",
+  indirizzo: "",
+  limit: 5,
+  threshold: 0.7,
+  cutoff: 0.5
+};
 let mainWindow;
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -30,7 +41,7 @@ const createWindow = () => {
 
   ipcMain.handle('save-config', async (event, newConfig) => {
     try {
-      fs.writeFileSync("./db/config.json", JSON.stringify(newConfig, null, 2));
+      fs.writeFileSync(app.getPath('userData')+"/config.json", JSON.stringify(newConfig, null, 2));
       config = newConfig;
     } catch (e) {
       console.log('save-config error', e);
@@ -60,20 +71,35 @@ const createWindow = () => {
             })
 
             // leggi il file
-            const result = excelToJson({
-              sourceFile: filepath[0],
-              header: {
-                rows: 1
-              },
-              columnToKey: {
-                '*': '{{columnHeader}}'
-              }
-            });
+            try{
+              const result = excelToJson({
+                sourceFile: filepath[0],
+                header: {
+                  rows: 1
+                },
+                columnToKey: {
+                  '*': '{{columnHeader}}'
+                }
+              });
 
-            cleanUpAndStoreData(result);
-            // invia alla pagina
-            mainWindow.webContents.send('data-imported', data)
-            console.log('send data-imported');
+              cleanUpAndStoreData(result);
+              // invia alla pagina
+              mainWindow.webContents.send('data-imported', data)
+              console.log('send data-imported');
+
+              dialog.showMessageBox(mainWindow,{
+                message : 'Import completato',
+                type:'info'
+              })
+  
+            }catch(e){
+              dialog.showMessageBox(mainWindow,{
+                message : 'Export in import',
+                detail : JSON.stringify(e,null,2),
+                type:'error'
+              })
+
+            }
           }
         },
         {
@@ -81,9 +107,14 @@ const createWindow = () => {
           click: async () => {
             data = [];
             sanctions = {};
-            fs.writeFileSync("./db/data.json", JSON.stringify(data, null, 2));
-            fs.writeFileSync("./db/sanctions.json", JSON.stringify(sanctions, null, 2));
+            fs.writeFileSync(app.getPath('home')+'/data.osda', JSON.stringify(data, null, 2));
+            fs.writeFileSync(app.getPath('home')+'/sanctions.osdar', JSON.stringify(sanctions, null, 2));
             mainWindow.webContents.send('data-imported', data)
+            dialog.showMessageBox(mainWindow,{
+              message : 'Clean completato',
+              type:'info'
+            })
+
           }
         },
 
@@ -118,6 +149,21 @@ const createWindow = () => {
           click: async () => {
             console.log('checkSanctions......');
 
+            // check configurazione
+            let configErrors = [];
+            if(!config) configErrors.push('Configurazione non trovata');
+            if(!config.apiKey) configErrors.push('API KEY non impostata');
+            if(!config.nominativo) configErrors.push('nominativo non impostato');
+
+            if(!_.isEmpty(configErrors)){
+              dialog.showMessageBox(mainWindow,{
+                message : 'Configurazione errata',
+                detail : configErrors.join('\n'),
+                type:'error'
+              });
+              return;
+            }
+
             // create batch
             let chunks = _.chunk(data, 30);
             mainWindow.webContents.send('check-process', 
@@ -144,8 +190,8 @@ const createWindow = () => {
             }
 
             // update data on files
-            fs.writeFileSync("./db/data.json", JSON.stringify(data, null, 2));
-            fs.writeFileSync("./db/sanctions.json", JSON.stringify(sanctions, null, 2));
+            fs.writeFileSync(app.getPath('home')+'/data.osda', JSON.stringify(data, null, 2));
+            fs.writeFileSync(app.getPath('home')+'/sanctions.osdar', JSON.stringify(sanctions, null, 2));
 
             mainWindow.webContents.send('check-process', {
               event: 'end',
@@ -172,8 +218,18 @@ const createWindow = () => {
             try {
               const result = await dialog.showSaveDialog(mainWindow, options);
               fs.writeFileSync(result.filePath, JSON.stringify(sanctions, null, 2));
+              dialog.showMessageBox(mainWindow,{
+                message : 'Export completato',
+                type:'info'
+              })
+
             } catch (e) {
-              dialog.showErrorBox('Errore nell\'export dei risultati', e);
+              dialog.showMessageBox(mainWindow,{
+                message : 'Export nella esportazione raw',
+                detail : JSON.stringify(e,null,2),
+                type:'error'
+              })
+
             }
 
           }
@@ -240,13 +296,17 @@ ipcMain.handle('init', async () => {
   let init = {};
   try {
     console.log('reading init data....');
-    init.config = JSON.parse(fs.readFileSync('./db/config.json', 'utf8'));
-    init.data = JSON.parse(fs.readFileSync('./db/data.json', 'utf8'));
-    init.sanctions = JSON.parse(fs.readFileSync('./db/sanctions.json', 'utf8'));
+    init.config = JSON.parse(fs.readFileSync(app.getPath('userData')+"/config.json", 'utf8'));
+    init.data = JSON.parse(fs.readFileSync(app.getPath('home')+'/data.osda', 'utf8'));
+    init.sanctions = JSON.parse(fs.readFileSync(app.getPath('home')+'/sanctions.osdar', 'utf8'));
   } catch (e) {
     console.log('Error reading init data', e);
   }
-  config = init.config ?? {};
+  if(!_.isEmpty(init.config)){
+    config = init.config;
+  }else{
+    init.config = config;
+  }
   data = init.data ?? [];
   sanctions = init.sanctions ?? {};
   return init;
@@ -277,7 +337,7 @@ const cleanUpAndStoreData = function (result) {
     if (!data) data = [];
     data.push(...newData);
   }
-  fs.writeFileSync("./db/data.json", JSON.stringify(data, null, 2));
+  fs.writeFileSync(app.getPath('home')+'/data.osda', JSON.stringify(data, null, 2));
 };
 
 function sleep(ms) {
