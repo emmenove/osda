@@ -1,5 +1,11 @@
 let data = [];
 let config = [];
+let progress = {
+    percent:0,
+    batch:0,
+    total:0
+}
+
 
 const renderTable = function () {
 
@@ -141,11 +147,23 @@ const renderConfig = function () {
 }
 
 
+const renderProgress = function(){
+    let _html = [];
+    _html.push('<div class="h-100 w-100 align-items-center justify-content-center text-center p-5">');
+    _html.push('<div class="progress center-block m-auto w-75">');
+    _html.push('<div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="'+progress.percent+'" aria-valuemin="0" aria-valuemax="100" style="width: '+progress.percent+'%"></div>');
+    _html.push('</div>');
+    _html.push('<p>Process batch '+progress.batch+' / '+progress.total+'</p>')
+    _html.push('</div>');
+    $('#content').html(_html.join('\n'));
+}
+
 const displayPage = function (page, args) {
     console.log(page);
     switch (page) {
         case 'info': renderInfo(args); break;
         case 'config': renderConfig(); break;
+        case 'progress': renderProgress(); break;
         default: renderTable(); break;
     }
 }
@@ -173,7 +191,11 @@ const updateConfig = function () {
     console.log('update config', config);
 
     $('#iApiKey').val(config.apiKey);
-    //collezione: $('input[name="checkCollezione"]:checked').val(),
+    switch(config.collezione){
+        case 'sanctions' : $('#iCollezione2').prop('checked', true);break;
+        case 'pep' : $('#iCollezione3').prop('checked', true);break;
+        default : $('#iCollezione1').prop('checked', true);break;
+    }
     $('#iNominativo').val(config.nominativo);
     $('#iGiurisdizione').val(config.giurisdizione);
     $('#iIndirizzo').val(config.indirizzo);
@@ -195,6 +217,19 @@ window.api.onNavigateTo((value) => {
 
 window.api.onCheckProcess((value) => {
     console.log(value);
+    if (value.event === 'start') {
+        progress = {
+            percent:0,
+            batch:0,
+            total:value.total
+        }
+        displayPage('progress');
+    }
+    if (value.event === 'progress') {
+        progress.percent=value.percent;
+        progress.batch=value.batch;
+        displayPage('progress');
+    }
     if (value.event === 'end') {
         data = value.data;
         displayPage('table');

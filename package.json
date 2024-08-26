@@ -34,6 +34,7 @@
     "bootstrap-icons": "^1.11.3",
     "convert-excel-to-json": "^1.7.0",
     "electron-squirrel-startup": "^1.0.1",
+    "exceljs": "^4.4.0",
     "lodash": "^4.17.21",
     "node-fetch": "^2.7.0",
     "uuid": "^10.0.0"

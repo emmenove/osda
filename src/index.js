@@ -5,6 +5,9 @@ var _ = require('lodash');
 const excelToJson = require('convert-excel-to-json');
 const { v4: uuidv4 } = require('uuid');
 const fetch = require('node-fetch');
+const { dialog } = require('electron');
+const excel = require("exceljs");
+const internal = require('node:stream');
 
 // variabile principale!
 let data = [];
@@ -48,7 +51,6 @@ const createWindow = () => {
         {
           label: "Import",
           click: async () => {
-            const { dialog } = require('electron')
             // richiedi il file
             const filepath = dialog.showOpenDialogSync({
               filters: [
@@ -77,8 +79,8 @@ const createWindow = () => {
         {
           label: "Clean",
           click: async () => {
-            data=[];
-            sanctions={};
+            data = [];
+            sanctions = {};
             fs.writeFileSync("./db/data.json", JSON.stringify(data, null, 2));
             fs.writeFileSync("./db/sanctions.json", JSON.stringify(sanctions, null, 2));
             mainWindow.webContents.send('data-imported', data)
@@ -106,7 +108,6 @@ const createWindow = () => {
             mainWindow.webContents.send('navigate-to', 'config');
           }
         },
-
       ]
     },
     {
@@ -116,34 +117,99 @@ const createWindow = () => {
           label: "Check",
           click: async () => {
             console.log('checkSanctions......');
-            mainWindow.webContents.send('check-process', { event: 'start' });
 
             // create batch
             let chunks = _.chunk(data, 30);
+            mainWindow.webContents.send('check-process', 
+              {
+                event: 'start',
+                percent: 0,
+                batch:0,
+                total:chunks.length
+              });
+
             let index = 0;
             for (let c of chunks) {
               index++;
+
               let result = await processBatch(c);
               mainWindow.webContents.send('check-process', {
                 event: 'progress',
                 percent: percentage(index, chunks.length),
+                batch:index,
+                total:chunks.length,
                 result: result
               });
+
             }
 
             // update data on files
             fs.writeFileSync("./db/data.json", JSON.stringify(data, null, 2));
             fs.writeFileSync("./db/sanctions.json", JSON.stringify(sanctions, null, 2));
 
-            mainWindow.webContents.send('check-process', { 
+            mainWindow.webContents.send('check-process', {
               event: 'end',
-              data : data 
+              data: data
             });
           }
         }
       ]
     },
+    {
+      label: "Export",
+      submenu: [
+        {
+          label: "Export raw results",
+          click: async () => {
+            console.log('exporting raw ......');
 
+            const options = {
+              filters: [
+                { name: 'File JSON', extensions: ['json'] },
+              ],
+              defaultPath: app.getPath('documents') + '/raw-results.json',
+            }
+            try {
+              const result = await dialog.showSaveDialog(mainWindow, options);
+              fs.writeFileSync(result.filePath, JSON.stringify(sanctions, null, 2));
+            } catch (e) {
+              dialog.showErrorBox('Errore nell\'export dei risultati', e);
+            }
+
+          }
+        },
+        {
+          label: "Export excel results",
+          click: async () => {
+            console.log('exporting excel ......');
+
+            const options = {
+              filters: [
+                { name: 'Foglio di lavoro di Microsoft Excel', extensions: ['xlsx'] },
+              ],
+              defaultPath: app.getPath('documents') + '/results.xlsx',
+            }
+            try {
+              const result = await dialog.showSaveDialog(mainWindow, options);
+              const xlsx = await exportExcelResult();
+              fs.writeFileSync(result.filePath, xlsx);
+              dialog.showMessageBox(mainWindow,{
+                message : 'Export completato',
+                type:'info'
+              })
+            } catch (e) {
+              dialog.showMessageBox(mainWindow,{
+                message : 'Export nella esportazione',
+                detail : JSON.stringify(e,null,2),
+                type:'error'
+              })
+            }
+
+          }
+        }
+
+      ]
+    },
   ]);
   Menu.setApplicationMenu(menu);
 
@@ -253,7 +319,7 @@ async function processBatch(batch) {
     'maxRedirects': 20
   };
 
-  const url = 'https://api.opensanctions.org/match/'+config.collezione;
+  const url = 'https://api.opensanctions.org/match/' + config.collezione;
   const result = await fetch(url, {
     method: 'post',
     body: postData,
@@ -278,7 +344,7 @@ async function processBatch(batch) {
     for (let m of matches) {
       if (!_.isEmpty(m.properties.topics)) {
         d._topic = 2; //topic
-      }else{
+      } else {
         d._topic = 1; //risultato ma senza topic
       }
     }
@@ -286,10 +352,90 @@ async function processBatch(batch) {
 
 
   //update results..
-
-
   return resultJson;
 
+}
+
+const exportExcelResult = async function () {
+  let workbook = new excel.Workbook(); // Creating workbook
+  let worksheet = workbook.addWorksheet("Analisi"); // Creating worksheet
+
+  // costruisco le colonne, prima i risultati
+  let columnsResults = [
+    { header: "Name", key: "_name" },
+    { header: "Topics", key: "_topics" },
+    { header: "Notes", key: "_notes" },
+    { header: "Registration number", key: "_registrationNumber" },
+    { header: "Source url", key: "_sourceUrl" },
+    { header: "Address", key: "_address" },
+    { header: "Dataset", key: "_datasets" },
+    { header: "Score", key: "_score" }
+  ];
+  // e aggiungo tutte le colonne di data
+  let columnsData = Object.keys(data[0]).filter((e) => !e.startsWith('_')).map(e => ({ header: e, key: e }))
+  let columns = [];
+  columns.push(...columnsResults);
+  columns.push(...columnsData);
+  worksheet.columns = columns;
+
+  // creo il json dei dati incrociando data e sanctions
+  let rows = [];
+  for (let d of data) {
+    const s = sanctions[d._id];
+
+    // template row with initial values
+    const r = {};
+    for (let c of columnsResults) {
+      r[c.key] = '';
+    }
+    for (let c of columnsData) {
+      r[c.key] = '';
+      if (!_.isEmpty(d[c.key])) {
+        r[c.key] = d[c.key];
+      }
+    }
+
+    // helper function start..
+    const getProperty = function (key, result) {
+      key = key.substring(1);
+      let o = result.properties ? result.properties[key] : null;
+      if (o) {
+        if (typeof o === 'string') {
+          return o;
+        } else {
+          try {
+            return o.join('\n');
+          } catch (e) { }
+        }
+      }
+      return '';
+    }
+    let rindex=0;
+    const addRow = function (row) {
+      rindex++;
+      worksheet.addRow(row);
+    }
+
+    //sanctions
+    if (!_.isEmpty(s.results)) {
+      for (let re of s.results) {
+        let newRow = Object.assign({}, r);
+        // campi properties
+        for (let c of columnsResults) {
+          newRow[c.key] = getProperty(c.key, re);
+        }
+        newRow._dataset = re.dataset;
+        newRow._score = re.score;
+        addRow(newRow);
+
+      }
+    } else {
+      addRow(r);
+    }
+  }
+
+  let b =  await workbook.xlsx.writeBuffer();
+  return b;
 }
 
 
