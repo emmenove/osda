@@ -8,6 +8,8 @@ const fetch = require('node-fetch');
 const { dialog } = require('electron');
 const excel = require("exceljs");
 const internal = require('node:stream');
+const { updateElectronApp } = require('update-electron-app');
+updateElectronApp()
 
 // variabile principale!
 let data = [];

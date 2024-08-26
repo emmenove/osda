@@ -1,8 +1,8 @@
 {
   "name": "osda",
   "productName": "osda",
-  "version": "1.0.0",
-  "description": "My Electron application description",
+  "version": "0.1.0",
+  "description": "Open sanctions desktop application",
   "main": "src/index.js",
   "scripts": {
     "start": "electron-forge start",
@@ -10,6 +10,10 @@
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "echo \"No linting configured\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/emmenove/osda.git"
   },
   "devDependencies": {
     "@electron-forge/cli": "^7.4.0",
@@ -28,7 +32,7 @@
     "name": "emmenove",
     "email": "cesco@emmenove.com"
   },
-  "license": "MIT",
+  "license": "UNLICENSED",
   "dependencies": {
     "axios": "^1.7.5",
     "bootstrap-icons": "^1.11.3",
@@ -37,6 +41,7 @@
     "exceljs": "^4.4.0",
     "lodash": "^4.17.21",
     "node-fetch": "^2.7.0",
+    "update-electron-app": "^3.0.0",
     "uuid": "^10.0.0"
   }
 }
