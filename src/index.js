@@ -109,8 +109,8 @@ const createWindow = () => {
           click: async () => {
             data = [];
             sanctions = {};
-            fs.writeFileSync(app.getPath('home')+'/data.osda', JSON.stringify(data, null, 2));
-            fs.writeFileSync(app.getPath('home')+'/sanctions.osdar', JSON.stringify(sanctions, null, 2));
+            fs.writeFileSync(app.getPath('userData')+'/data.osda', JSON.stringify(data, null, 2));
+            fs.writeFileSync(app.getPath('userData')+'/sanctions.osdar', JSON.stringify(sanctions, null, 2));
             mainWindow.webContents.send('data-imported', data)
             dialog.showMessageBox(mainWindow,{
               message : 'Clean completato',
@@ -192,8 +192,8 @@ const createWindow = () => {
             }
 
             // update data on files
-            fs.writeFileSync(app.getPath('home')+'/data.osda', JSON.stringify(data, null, 2));
-            fs.writeFileSync(app.getPath('home')+'/sanctions.osdar', JSON.stringify(sanctions, null, 2));
+            fs.writeFileSync(app.getPath('userData')+'/data.osda', JSON.stringify(data, null, 2));
+            fs.writeFileSync(app.getPath('userData')+'/sanctions.osdar', JSON.stringify(sanctions, null, 2));
 
             mainWindow.webContents.send('check-process', {
               event: 'end',
@@ -257,7 +257,7 @@ const createWindow = () => {
               })
             } catch (e) {
               dialog.showMessageBox(mainWindow,{
-                message : 'Export nella esportazione',
+                message : 'Errore nella esportazione',
                 detail : JSON.stringify(e,null,2),
                 type:'error'
               })
@@ -299,8 +299,8 @@ ipcMain.handle('init', async () => {
   try {
     console.log('reading init data....');
     init.config = JSON.parse(fs.readFileSync(app.getPath('userData')+"/config.json", 'utf8'));
-    init.data = JSON.parse(fs.readFileSync(app.getPath('home')+'/data.osda', 'utf8'));
-    init.sanctions = JSON.parse(fs.readFileSync(app.getPath('home')+'/sanctions.osdar', 'utf8'));
+    init.data = JSON.parse(fs.readFileSync(app.getPath('userData')+'/data.osda', 'utf8'));
+    init.sanctions = JSON.parse(fs.readFileSync(app.getPath('userData')+'/sanctions.osdar', 'utf8'));
   } catch (e) {
     console.log('Error reading init data', e);
   }
@@ -339,7 +339,7 @@ const cleanUpAndStoreData = function (result) {
     if (!data) data = [];
     data.push(...newData);
   }
-  fs.writeFileSync(app.getPath('home')+'/data.osda', JSON.stringify(data, null, 2));
+  fs.writeFileSync(app.getPath('userData')+'/data.osda', JSON.stringify(data, null, 2));
 };
 
 function sleep(ms) {
