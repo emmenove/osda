@@ -8,9 +8,15 @@ const fetch = require('node-fetch');
 const { dialog } = require('electron');
 const excel = require("exceljs");
 const internal = require('node:stream');
-const { updateElectronApp } = require('update-electron-app');
+const { updateElectronApp, UpdateSourceType } = require('update-electron-app');
 const { URLSearchParams } = require('node:url');
-updateElectronApp()
+
+
+updateElectronApp({
+  updateInterval: '1 hour',
+  logger: require('electron-log')
+})
+
 
 // variabile principale!
 let data = [];
@@ -181,14 +187,27 @@ const createWindow = () => {
             for (let c of chunks) {
               index++;
 
-              let result = await processBatch(c);
-              mainWindow.webContents.send('check-process', {
-                event: 'progress',
-                percent: percentage(index, chunks.length),
-                batch: index,
-                total: chunks.length,
-                result: result
-              });
+              try {
+                let result = await processBatch(c);
+                mainWindow.webContents.send('check-process', {
+                  event: 'progress',
+                  percent: percentage(index, chunks.length),
+                  batch: index,
+                  total: chunks.length,
+                  result: result
+                });
+              } catch (e) {
+                dialog.showMessageBox(mainWindow, {
+                  message: 'Errore nel check',
+                  detail: e.toString(),
+                  type: 'error'
+                })
+                mainWindow.webContents.send('check-process', {
+                  event: 'end',
+                  data: data
+                });
+                return;
+              }
 
             }
 
@@ -273,7 +292,7 @@ const createWindow = () => {
   Menu.setApplicationMenu(menu);
 
   // Open the DevTools.
-  if(!app.isPackaged){
+  if (!app.isPackaged) {
     mainWindow.webContents.openDevTools();
   }
 
@@ -385,51 +404,50 @@ async function processBatch(batch) {
     if (!_.isEmpty(config.limit)) queryParams.append('limit', parseInt(config.limit));
     if (!_.isEmpty(config.threshold)) queryParams.append('threshold', parseFloat(config.threshold));
     if (!_.isEmpty(config.cutoff)) queryParams.append('cutoff', parseFloat(config.cutoff));
+    if (!_.isEmpty(config.algorithm)) queryParams.append('algorithm', config.algorithm);
 
   } catch (e) {
-    console.error('adding query parameters', e);
+    throw new Error('Error adding query parameters: ');
   }
 
   let result = null;
-  try{
-    result = await fetch(url+'?'+queryParams.toString(), {
-      method: 'post',
-      body: postData,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': config.apiKey
-      },
-    });
-    const resultJson = await result.json();
-    const responses = resultJson.responses ?? {};
-    let ids = Object.keys(responses);
-    for (let id of ids) {
-      sanctions[id] = responses[id];
-      let d = data.find(e => e._id === id);
-      if (!d) {
-        console.log('Data', id, 'not found!');
-        continue;
-      }
-      //check severity and update data
-      let matches = responses[id].results;
-      d._topic = 0; //processato senza risultati
-      for (let m of matches) {
-        if (!_.isEmpty(m.properties.topics)) {
-          d._topic = 2; //topic
-        } else {
-          d._topic = 1; //risultato ma senza topic
-        }
-      }
-    }    
-  }catch(e){
-    dialog.showMessageBox(mainWindow, {
-      message: 'Errore nel check',
-      detail: JSON.stringify(e, null, 2),
-      type: 'error'
-    })
-    return;
-  }
+  result = await fetch(url + '?' + queryParams.toString(), {
+    method: 'post',
+    body: postData,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': config.apiKey
+    },
+  });
 
+
+  const resultJson = await result.json();
+  const responses = resultJson.responses ?? {};
+
+  let ids = Object.keys(responses);
+  for (let id of ids) {
+
+    let d = data.find(e => e._id === id);
+    if (!d) {
+      console.log('Data', id, 'not found!');
+      continue;
+    }
+    //cleanup
+    delete sanctions[id];
+    d._topic = 0;
+
+    sanctions[id] = responses[id];
+    
+    //check severity and update data
+    let matches = responses[id].results;
+    for (let m of matches) {
+      if (!_.isEmpty(m.properties.topics)) {
+        d._topic = d._topic < 2 ? 2 : d._topic; //topic
+      } else {
+        d._topic = d._topic < 1 ? 1 : d._topic; //risultato ma senza topic
+      }
+    }
+  }
   return sanctions;
 
 }

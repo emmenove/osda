@@ -42,10 +42,10 @@ const renderTable = function () {
     for (let r of data) {
         _html.push('<tr  onClick="displayPage(\'info\',\'' + r._id + '\')">');
         switch (r._topic) {
-            case 2: _html.push('<td scope="row"><i class="fa-solid fa-triangle-exclamation text-danger"></i></td>'); break;
-            case 1: _html.push('<td scope="row"><i class="fa-solid fa-circle-exclamation text-warning"></i></td>'); break;
-            case 0: _html.push('<td scope="row"><i class="fa-solid fa-circle-question text-muted"></i></td>'); break;
-            default: _html.push('<td scope="row"><i class="fa-solid fa-clock-rotate-left"></i></td>');
+            case 2: _html.push('<td scope="row"><i class="fa-solid fa-circle-exclamation text-danger"></i></td>'); break;
+            case 1: _html.push('<td scope="row"><i class="fa-regular fa-circle-check text-success"></i></td>'); break;
+            case 0: _html.push('<td scope="row"><i class="fa-regular fa-circle text-muted"></i></td>'); break;
+            default: _html.push('<td scope="row"><i class="fa-regular fa-circle-xmark"></i></td>');
         }
         for (let c of cols) {
             _html.push('<td scope="row">' + (r[c.field] ?? "-") + '</td>');
@@ -150,6 +150,21 @@ const renderConfig = function () {
     _html.push('</div>');
     _html.push('</div>');
 
+
+    _html.push('<div class="row">');
+    _html.push('<div class="col-3"><label>algorithm</label></div>');
+    _html.push('<div class="col">');
+    _html.push('<select class="form-select" id="algorithm" onChange="saveConfig()">');
+    _html.push('<option value="logic-v1" selected>logic-v1 (best)</option>');
+    _html.push('<option value="name-based">name-based</option>');
+    _html.push('<option value="name-qualified">name-qualified</option>');
+    _html.push('<option value="regression-v1">regression-v1</option>');
+    _html.push('<option value="regression-v2">regression-v2</option>');
+    _html.push('</select>');
+    _html.push('</div>');
+    _html.push('</div>');
+
+
     _html.push('</form>');
     $('#content').html(_html.join('\n'));
     updateConfig();
@@ -193,6 +208,8 @@ const getConfig = function () {
         limit: $('#iLimit').val(),
         threshold: $('#iThreshold').val(),
         cutoff: $('#iCutoff').val(),
+        cutoff: $('#iCutoff').val(),
+        algorithm:$('#algorithm option:selected').text(),
     }
 }
 
@@ -211,6 +228,7 @@ const updateConfig = function () {
     $('#iLimit').val(config.limit);
     $('#iThreshold').val(config.threshold);
     $('#iCutoff').val(config.cutoff);
+    $('#algorithm').val(config.algorithm);
 }
 
 window.api.onImport((value) => {

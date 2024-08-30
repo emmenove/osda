@@ -1,7 +1,7 @@
 {
   "name": "osda",
   "productName": "osda",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Open sanctions desktop application",
   "main": "src/index.js",
   "scripts": {
@@ -37,6 +37,7 @@
     "axios": "^1.7.5",
     "bootstrap-icons": "^1.11.3",
     "convert-excel-to-json": "^1.7.0",
+    "electron-log": "^5.1.7",
     "electron-squirrel-startup": "^1.0.1",
     "exceljs": "^4.4.0",
     "lodash": "^4.17.21",
