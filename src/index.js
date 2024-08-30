@@ -9,6 +9,7 @@ const { dialog } = require('electron');
 const excel = require("exceljs");
 const internal = require('node:stream');
 const { updateElectronApp } = require('update-electron-app');
+const { URLSearchParams } = require('node:url');
 updateElectronApp()
 
 // variabile principale!
@@ -43,7 +44,7 @@ const createWindow = () => {
 
   ipcMain.handle('save-config', async (event, newConfig) => {
     try {
-      fs.writeFileSync(app.getPath('userData')+"/config.json", JSON.stringify(newConfig, null, 2));
+      fs.writeFileSync(app.getPath('userData') + "/config.json", JSON.stringify(newConfig, null, 2));
       config = newConfig;
     } catch (e) {
       console.log('save-config error', e);
@@ -73,7 +74,7 @@ const createWindow = () => {
             })
 
             // leggi il file
-            try{
+            try {
               const result = excelToJson({
                 sourceFile: filepath[0],
                 header: {
@@ -89,16 +90,16 @@ const createWindow = () => {
               mainWindow.webContents.send('data-imported', data)
               console.log('send data-imported');
 
-              dialog.showMessageBox(mainWindow,{
-                message : 'Import completato',
-                type:'info'
+              dialog.showMessageBox(mainWindow, {
+                message: 'Import completato',
+                type: 'info'
               })
-  
-            }catch(e){
-              dialog.showMessageBox(mainWindow,{
-                message : 'Export in import',
-                detail : JSON.stringify(e,null,2),
-                type:'error'
+
+            } catch (e) {
+              dialog.showMessageBox(mainWindow, {
+                message: 'Export in import',
+                detail: JSON.stringify(e, null, 2),
+                type: 'error'
               })
 
             }
@@ -109,12 +110,12 @@ const createWindow = () => {
           click: async () => {
             data = [];
             sanctions = {};
-            fs.writeFileSync(app.getPath('userData')+'/data.osda', JSON.stringify(data, null, 2));
-            fs.writeFileSync(app.getPath('userData')+'/sanctions.osdar', JSON.stringify(sanctions, null, 2));
+            fs.writeFileSync(app.getPath('userData') + '/data.osda', JSON.stringify(data, null, 2));
+            fs.writeFileSync(app.getPath('userData') + '/sanctions.osdar', JSON.stringify(sanctions, null, 2));
             mainWindow.webContents.send('data-imported', data)
-            dialog.showMessageBox(mainWindow,{
-              message : 'Clean completato',
-              type:'info'
+            dialog.showMessageBox(mainWindow, {
+              message: 'Clean completato',
+              type: 'info'
             })
 
           }
@@ -153,27 +154,27 @@ const createWindow = () => {
 
             // check configurazione
             let configErrors = [];
-            if(!config) configErrors.push('Configurazione non trovata');
-            if(!config.apiKey) configErrors.push('API KEY non impostata');
-            if(!config.nominativo) configErrors.push('nominativo non impostato');
+            if (!config) configErrors.push('Configurazione non trovata');
+            if (!config.apiKey) configErrors.push('API KEY non impostata');
+            if (!config.nominativo) configErrors.push('nominativo non impostato');
 
-            if(!_.isEmpty(configErrors)){
-              dialog.showMessageBox(mainWindow,{
-                message : 'Configurazione errata',
-                detail : configErrors.join('\n'),
-                type:'error'
+            if (!_.isEmpty(configErrors)) {
+              dialog.showMessageBox(mainWindow, {
+                message: 'Configurazione errata',
+                detail: configErrors.join('\n'),
+                type: 'error'
               });
               return;
             }
 
             // create batch
             let chunks = _.chunk(data, 30);
-            mainWindow.webContents.send('check-process', 
+            mainWindow.webContents.send('check-process',
               {
                 event: 'start',
                 percent: 0,
-                batch:0,
-                total:chunks.length
+                batch: 0,
+                total: chunks.length
               });
 
             let index = 0;
@@ -184,16 +185,16 @@ const createWindow = () => {
               mainWindow.webContents.send('check-process', {
                 event: 'progress',
                 percent: percentage(index, chunks.length),
-                batch:index,
-                total:chunks.length,
+                batch: index,
+                total: chunks.length,
                 result: result
               });
 
             }
 
             // update data on files
-            fs.writeFileSync(app.getPath('userData')+'/data.osda', JSON.stringify(data, null, 2));
-            fs.writeFileSync(app.getPath('userData')+'/sanctions.osdar', JSON.stringify(sanctions, null, 2));
+            fs.writeFileSync(app.getPath('userData') + '/data.osda', JSON.stringify(data, null, 2));
+            fs.writeFileSync(app.getPath('userData') + '/sanctions.osdar', JSON.stringify(sanctions, null, 2));
 
             mainWindow.webContents.send('check-process', {
               event: 'end',
@@ -220,16 +221,16 @@ const createWindow = () => {
             try {
               const result = await dialog.showSaveDialog(mainWindow, options);
               fs.writeFileSync(result.filePath, JSON.stringify(sanctions, null, 2));
-              dialog.showMessageBox(mainWindow,{
-                message : 'Export completato',
-                type:'info'
+              dialog.showMessageBox(mainWindow, {
+                message: 'Export completato',
+                type: 'info'
               })
 
             } catch (e) {
-              dialog.showMessageBox(mainWindow,{
-                message : 'Export nella esportazione raw',
-                detail : JSON.stringify(e,null,2),
-                type:'error'
+              dialog.showMessageBox(mainWindow, {
+                message: 'Export nella esportazione raw',
+                detail: JSON.stringify(e, null, 2),
+                type: 'error'
               })
 
             }
@@ -251,15 +252,15 @@ const createWindow = () => {
               const result = await dialog.showSaveDialog(mainWindow, options);
               const xlsx = await exportExcelResult();
               fs.writeFileSync(result.filePath, xlsx);
-              dialog.showMessageBox(mainWindow,{
-                message : 'Export completato',
-                type:'info'
+              dialog.showMessageBox(mainWindow, {
+                message: 'Export completato',
+                type: 'info'
               })
             } catch (e) {
-              dialog.showMessageBox(mainWindow,{
-                message : 'Errore nella esportazione',
-                detail : JSON.stringify(e,null,2),
-                type:'error'
+              dialog.showMessageBox(mainWindow, {
+                message: 'Errore nella esportazione',
+                detail: JSON.stringify(e, null, 2),
+                type: 'error'
               })
             }
 
@@ -272,7 +273,9 @@ const createWindow = () => {
   Menu.setApplicationMenu(menu);
 
   // Open the DevTools.
-  // mainWindow.webContents.openDevTools();
+  if(!app.isPackaged){
+    mainWindow.webContents.openDevTools();
+  }
 
 };
 
@@ -298,15 +301,15 @@ ipcMain.handle('init', async () => {
   let init = {};
   try {
     console.log('reading init data....');
-    init.config = JSON.parse(fs.readFileSync(app.getPath('userData')+"/config.json", 'utf8'));
-    init.data = JSON.parse(fs.readFileSync(app.getPath('userData')+'/data.osda', 'utf8'));
-    init.sanctions = JSON.parse(fs.readFileSync(app.getPath('userData')+'/sanctions.osdar', 'utf8'));
+    init.config = JSON.parse(fs.readFileSync(app.getPath('userData') + "/config.json", 'utf8'));
+    init.data = JSON.parse(fs.readFileSync(app.getPath('userData') + '/data.osda', 'utf8'));
+    init.sanctions = JSON.parse(fs.readFileSync(app.getPath('userData') + '/sanctions.osdar', 'utf8'));
   } catch (e) {
     console.log('Error reading init data', e);
   }
-  if(!_.isEmpty(init.config)){
+  if (!_.isEmpty(init.config)) {
     config = init.config;
-  }else{
+  } else {
     init.config = config;
   }
   data = init.data ?? [];
@@ -339,7 +342,7 @@ const cleanUpAndStoreData = function (result) {
     if (!data) data = [];
     data.push(...newData);
   }
-  fs.writeFileSync(app.getPath('userData')+'/data.osda', JSON.stringify(data, null, 2));
+  fs.writeFileSync(app.getPath('userData') + '/data.osda', JSON.stringify(data, null, 2));
 };
 
 function sleep(ms) {
@@ -358,63 +361,76 @@ async function processBatch(batch) {
     let o = {
       schema: 'Company',
       properties: {
-        name: [
-          b[config.nominativo]
-        ],
-        jurisdiction: [
-          b[config.giurisdizione]
-        ]
+        id: b.id
       }
     }
+    // aggiungo solo i campi presenti
+    if (!_.isEmpty(config.nominativo) && !_.isEmpty(b[config.nominativo])) {
+      o.properties.name = b[config.nominativo];
+    }
+    if (!_.isEmpty(config.giurisdizione) && !_.isEmpty(b[config.giurisdizione])) {
+      o.properties.jurisdiction = b[config.giurisdizione];
+    }
+
     queries[b._id] = o;
   }
   let postData = JSON.stringify({ queries });
 
-  var options = {
-    'method': 'POST',
-    'hostname': 'api.opensanctions.org',
-    'path': '/match/default',
-    'headers': {
-      'Content-Type': 'application/json',
-      'Authorization': 'de95c1c616a18fb15de8ae9808a63262'
-    },
-    'maxRedirects': 20
-  };
-
   const url = 'https://api.opensanctions.org/match/' + config.collezione;
-  const result = await fetch(url, {
-    method: 'post',
-    body: postData,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': config.apiKey
-    },
-  });
-  const resultJson = await result.json();
-  const responses = resultJson.responses ?? {};
-  let ids = Object.keys(responses);
-  for (let id of ids) {
-    sanctions[id] = responses[id];
-    let d = data.find(e => e._id === id);
-    if (!d) {
-      console.log('Data', id, 'not found!');
-      continue;
-    }
-    //check severity and update data
-    let matches = responses[id].results;
-    d._topic = 0; //processato senza risultati
-    for (let m of matches) {
-      if (!_.isEmpty(m.properties.topics)) {
-        d._topic = 2; //topic
-      } else {
-        d._topic = 1; //risultato ma senza topic
-      }
-    }
+
+  // parametri
+  const queryParams = new URLSearchParams();
+  try {
+
+    if (!_.isEmpty(config.limit)) queryParams.append('limit', parseInt(config.limit));
+    if (!_.isEmpty(config.threshold)) queryParams.append('threshold', parseFloat(config.threshold));
+    if (!_.isEmpty(config.cutoff)) queryParams.append('cutoff', parseFloat(config.cutoff));
+
+  } catch (e) {
+    console.error('adding query parameters', e);
   }
 
+  let result = null;
+  try{
+    result = await fetch(url+'?'+queryParams.toString(), {
+      method: 'post',
+      body: postData,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': config.apiKey
+      },
+    });
+    const resultJson = await result.json();
+    const responses = resultJson.responses ?? {};
+    let ids = Object.keys(responses);
+    for (let id of ids) {
+      sanctions[id] = responses[id];
+      let d = data.find(e => e._id === id);
+      if (!d) {
+        console.log('Data', id, 'not found!');
+        continue;
+      }
+      //check severity and update data
+      let matches = responses[id].results;
+      d._topic = 0; //processato senza risultati
+      for (let m of matches) {
+        if (!_.isEmpty(m.properties.topics)) {
+          d._topic = 2; //topic
+        } else {
+          d._topic = 1; //risultato ma senza topic
+        }
+      }
+    }    
+  }catch(e){
+    dialog.showMessageBox(mainWindow, {
+      message: 'Errore nel check',
+      detail: JSON.stringify(e, null, 2),
+      type: 'error'
+    })
+    return;
+  }
 
-  //update results..
-  return resultJson;
+  return sanctions;
 
 }
 
@@ -472,7 +488,7 @@ const exportExcelResult = async function () {
       }
       return '';
     }
-    let rindex=0;
+    let rindex = 0;
     const addRow = function (row) {
       rindex++;
       worksheet.addRow(row);
@@ -496,7 +512,7 @@ const exportExcelResult = async function () {
     }
   }
 
-  let b =  await workbook.xlsx.writeBuffer();
+  let b = await workbook.xlsx.writeBuffer();
   return b;
 }
 
