@@ -209,7 +209,7 @@ const getConfig = function () {
         threshold: $('#iThreshold').val(),
         cutoff: $('#iCutoff').val(),
         cutoff: $('#iCutoff').val(),
-        algorithm:$('#algorithm option:selected').text(),
+        algorithm:$('#algorithm').val(),
     }
 }
 
