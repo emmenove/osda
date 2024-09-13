@@ -167,7 +167,7 @@ const createWindow = () => {
             if (!_.isEmpty(configErrors)) {
               dialog.showMessageBox(mainWindow, {
                 message: 'Configurazione errata',
-                detail: configErrors.join('\n'),
+                detail: configErrors.join('\r\n'),
                 type: 'error'
               });
               return;
@@ -390,6 +390,15 @@ async function processBatch(batch) {
     if (!_.isEmpty(config.giurisdizione) && !_.isEmpty(b[config.giurisdizione])) {
       o.properties.jurisdiction = b[config.giurisdizione];
     }
+    if (!_.isEmpty(config.indirizzo) && !_.isEmpty(b[config.indirizzo])) {
+      o.properties.indirizzo = b[config.indirizzo];
+    }
+    if (!_.isEmpty(config.registrationNumber) && !_.isEmpty(b[config.registrationNumber])) {
+      o.properties.registrationNumber = b[config.registrationNumber];
+    }
+    if (!_.isEmpty(config.incorporationDate) && !_.isEmpty(b[config.incorporationDate])) {
+      o.properties.incorporationDate = b[config.incorporationDate];
+    }
 
     queries[b._id] = o;
   }
@@ -406,12 +415,37 @@ async function processBatch(batch) {
     if (!_.isEmpty(config.cutoff)) queryParams.append('cutoff', parseFloat(config.cutoff));
     if (!_.isEmpty(config.algorithm)) queryParams.append('algorithm', config.algorithm);
 
+    // info, non dovrebbe essere qui la conversione, ma sul salvataggio della config... ma
+    // per il momento è così
+    if (!_.isEmpty(config.include_dataset)) {
+      config.include_dataset.split(',').forEach(p=>{
+        queryParams.append('include_dataset', p);  
+      })
+  }
+    if (!_.isEmpty(config.exclude_schema)) {
+      config.exclude_schema.split(',').forEach(p=>{
+        queryParams.append('exclude_schema', p);  
+      })
+  }
+    if (!_.isEmpty(config.exclude_dataset)) {
+      config.exclude_dataset.split(',').forEach(p=>{
+        queryParams.append('exclude_dataset', p);  
+      })
+  }
+    if (!_.isEmpty(config.topics)) {
+      config.topics.split(',').forEach(p=>{
+        queryParams.append('topics', p);  
+      })
+  }
+
   } catch (e) {
     throw new Error('Error adding query parameters: ');
   }
 
   let result = null;
-  result = await fetch(url + '?' + queryParams.toString(), {
+  let urlCall = url + '?' + queryParams.toString();
+  console.log(urlCall);
+  result = await fetch(urlCall, {
     method: 'post',
     body: postData,
     headers: {
@@ -437,7 +471,7 @@ async function processBatch(batch) {
     d._topic = 0;
 
     sanctions[id] = responses[id];
-    
+
     //check severity and update data
     let matches = responses[id].results;
     for (let m of matches) {
@@ -500,7 +534,7 @@ const exportExcelResult = async function () {
           return o;
         } else {
           try {
-            return o.join('\n');
+            return o.join('\r\n');
           } catch (e) { }
         }
       }

@@ -130,6 +130,20 @@ const renderConfig = function () {
     _html.push('</div>');
 
     _html.push('<div class="row">');
+    _html.push('<div class="col-3"><label>N.registrazione</label></div>');
+    _html.push('<div class="col">');
+    _html.push('<input type="text" class="form-control" id="iRegistrationNumner" onChange="saveConfig()">');
+    _html.push('</div>');
+    _html.push('</div>');
+
+    _html.push('<div class="row">');
+    _html.push('<div class="col-3"><label>Incorporation date</label></div>');
+    _html.push('<div class="col">');
+    _html.push('<input type="text" class="form-control" id="iIncorporationDate" onChange="saveConfig()">');
+    _html.push('</div>');
+    _html.push('</div>');
+
+    _html.push('<div class="row">');
     _html.push('<div class="col-3"><label>limit</label></div>');
     _html.push('<div class="col">');
     _html.push('<input type="number" class="form-control" id="iLimit" onChange="saveConfig()">');
@@ -164,6 +178,33 @@ const renderConfig = function () {
     _html.push('</div>');
     _html.push('</div>');
 
+    _html.push('<div class="row">');
+    _html.push('<div class="col-3"><label>Include dataset</label></div>');
+    _html.push('<div class="col">');
+    _html.push('<input type="text" class="form-control" placeholder="use comma to separate values" id="include_dataset" onChange="saveConfig()">');
+    _html.push('</div>');
+    _html.push('</div>');
+
+    _html.push('<div class="row">');
+    _html.push('<div class="col-3"><label>Exclude schema</label></div>');
+    _html.push('<div class="col">');
+    _html.push('<input type="text" class="form-control" placeholder="use comma to separate values" id="exclude_schema" onChange="saveConfig()">');
+    _html.push('</div>');
+    _html.push('</div>');
+
+    _html.push('<div class="row">');
+    _html.push('<div class="col-3"><label>Exclude dataset</label></div>');
+    _html.push('<div class="col">');
+    _html.push('<input type="text" class="form-control" placeholder="use comma to separate values" id="exclude_dataset" onChange="saveConfig()">');
+    _html.push('</div>');
+    _html.push('</div>');
+
+    _html.push('<div class="row">');
+    _html.push('<div class="col-3"><label>Topics</label></div>');
+    _html.push('<div class="col">');
+    _html.push('<input type="text" class="form-control" placeholder="use comma to separate values" id="topics" onChange="saveConfig()">');
+    _html.push('</div>');
+    _html.push('</div>');
 
     _html.push('</form>');
     $('#content').html(_html.join('\n'));
@@ -205,11 +246,17 @@ const getConfig = function () {
         nominativo: $('#iNominativo').val(),
         giurisdizione: $('#iGiurisdizione').val(),
         indirizzo: $('#iIndirizzo').val(),
+        registrationNumber: $('#iRegistrationNumner').val(),
+        incorporationDate: $('#iIncorporationDate').val(),
         limit: $('#iLimit').val(),
         threshold: $('#iThreshold').val(),
         cutoff: $('#iCutoff').val(),
         cutoff: $('#iCutoff').val(),
         algorithm:$('#algorithm').val(),
+        include_dataset:$('#include_dataset').val(),
+        exclude_schema:$('#exclude_schema').val(),
+        exclude_dataset:$('#exclude_dataset').val(),
+        topics:$('#topics').val(),
     }
 }
 
@@ -225,10 +272,16 @@ const updateConfig = function () {
     $('#iNominativo').val(config.nominativo);
     $('#iGiurisdizione').val(config.giurisdizione);
     $('#iIndirizzo').val(config.indirizzo);
+    $('#iRegistrationNumner').val(config.registrationNumber);
+    $('#iIncorporationDate').val(config.incorporationDate);
     $('#iLimit').val(config.limit);
     $('#iThreshold').val(config.threshold);
     $('#iCutoff').val(config.cutoff);
     $('#algorithm').val(config.algorithm);
+    $('#include_dataset').val(config.include_dataset);
+    $('#exclude_schema').val(config.exclude_schema);
+    $('#exclude_dataset').val(config.exclude_dataset);
+    $('#topics').val(config.topics);
 }
 
 window.api.onImport((value) => {
